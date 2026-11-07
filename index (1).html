@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ExamCraft — JC Bose UST YMCA Faridabad</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #0d1117; color: #e6edf3; margin: 0; }
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #161b22; } ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+
+  /* Gradient text */
+  .grad { background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .grad-bg { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+
+  /* Navbar */
+  nav { background: rgba(13,17,23,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid #30363d; position: sticky; top: 0; z-index: 100; }
+
+  /* Card */
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; }
+
+  /* Subject chips */
+  .chip { padding: 6px 14px; border-radius: 20px; border: 1px solid #30363d; background: #161b22; color: #8b949e; cursor: pointer; font-size: 13px; font-weight: 500; transition: all .2s; }
+  .chip.active { background: linear-gradient(135deg,#3b82f6,#8b5cf6); border-color: transparent; color: #fff; }
+  .chip:hover:not(.active) { border-color: #3b82f6; color: #e6edf3; }
+
+  /* File drop zone */
+  .drop-zone { border: 2px dashed #30363d; border-radius: 10px; transition: all .2s; cursor: pointer; }
+  .drop-zone.dragover { border-color: #3b82f6; background: rgba(59,130,246,0.05); }
+
+  /* Generate button */
+  .btn-gen { background: linear-gradient(135deg,#3b82f6,#8b5cf6); border: none; color: #fff; font-weight: 600; border-radius: 10px; cursor: pointer; transition: opacity .2s, transform .1s; }
+  .btn-gen:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-gen:active { transform: translateY(0); }
+  .btn-gen:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  /* Progress bar */
+  .progress-bar { height: 4px; background: #30363d; border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg,#3b82f6,#8b5cf6); border-radius: 2px; transition: width .3s; }
+
+  /* Booklet pages */
+  .booklet-page { display: none; }
+  .booklet-page.active { display: block; }
+
+  /* Ruled lines */
+  .ruled { background-image: repeating-linear-gradient(to bottom, transparent, transparent 27px, #d1d5db 27px, #d1d5db 28px); }
+
+  /* Dot indicators */
+  .dot-indicator { width: 8px; height: 8px; border-radius: 50%; background: #30363d; cursor: pointer; transition: all .2s; }
+  .dot-indicator.active { background: #3b82f6; width: 24px; border-radius: 4px; }
+
+  /* Answer booklet container */
+  .booklet-wrap { background: #fff; color: #1a1a1a; border-radius: 8px; overflow: hidden; font-family: 'Times New Roman', serif; position: relative; }
+
+  /* Page 0 cover */
+  .cover-header { background: #1a237e; color: #fff; padding: 16px 20px; }
+  .cover-field { border-bottom: 1px solid #333; padding: 4px 0; margin: 6px 0; font-size: 13px; }
+  .index-table td, .index-table th { border: 1px solid #999; padding: 4px 8px; font-size: 11px; }
+
+  /* Page 1 - margin line */
+  .margin-wrap { position: relative; padding-left: 50px; }
+  .margin-line { position: absolute; left: 40px; top: 0; bottom: 0; width: 1px; background: #e8a0a0; }
+  .question-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 10px 14px; margin: 10px 0; border-radius: 0 6px 6px 0; }
+  .section-head { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; margin: 12px 0 6px; }
+  .section-dot { width: 8px; height: 8px; border-radius: 50%; background: #1a237e; }
+
+  /* Keywords */
+  .kw { font-weight: 700; color: #1a237e; }
+
+  /* Page 2 */
+  .diagram-box { background: #f8f8f8; border: 1px solid #ccc; border-radius: 4px; padding: 12px 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; white-space: pre; overflow-x: auto; line-height: 1.5; }
+  .final-box { background: #f0f2ff; border: 2px solid #3f51b5; border-radius: 6px; padding: 12px 16px; margin: 10px 0; }
+  .rough-box { border: 2px dashed #999; border-radius: 6px; padding: 12px; margin: 10px 0; min-height: 60px; font-size: 12px; color: #666; }
+
+  /* Page 3 high yield */
+  .hy-header { background: #b71c1c; color: #fff; padding: 12px 20px; }
+  .hy-card { border: 1px solid #ef9a9a; border-radius: 6px; padding: 12px; margin: 10px 16px; background: #fff9f9; }
+
+  /* Page nav bar */
+  .page-nav-bar { background: #1a237e; color: #fff; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+  .page-badge { background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+  .page-footer { background: #1a237e; color: #fff; padding: 6px 16px; font-size: 10px; display: flex; justify-content: space-between; }
+
+  /* Empty state */
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: #161b22; border: 1px solid #30363d; padding: 12px 20px; border-radius: 10px; font-size: 14px; z-index: 999; transform: translateY(20px); opacity: 0; transition: all .3s; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: #3fb950; }
+  .toast.error { border-color: #f85149; }
+
+  /* Swipe */
+  .swipe-container { touch-action: pan-y; user-select: none; }
+
+  input[type=file] { display: none; }
+
+  @media(max-width:1024px) {
+    .two-col { flex-direction: column !important; }
+    .left-panel { width: 100% !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="px-6 py-3 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 grad-bg rounded-lg flex items-center justify-center text-white font-bold text-sm">EC</div>
+    <span class="font-bold text-lg grad">ExamCraft</span>
+    <span class="text-xs text-gray-500 hidden sm:block">by JC Bose UST YMCA Faridabad</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <div id="fp-badge" class="flex items-center gap-2 text-xs text-gray-500 bg-[#161b22] border border-[#30363d] px-3 py-1.5 rounded-full">
+      <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+      <span id="fp-id">Analytics Active</span>
+    </div>
+    <a href="https://github.com/index-oss/ExamCraft" target="_blank" class="text-gray-400 hover:text-white transition-colors text-sm">GitHub ↗</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="px-6 py-14 text-center max-w-4xl mx-auto">
+  <div class="inline-flex items-center gap-2 text-xs text-gray-400 bg-[#161b22] border border-[#30363d] px-3 py-1.5 rounded-full mb-6">
+    <span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+    AI-powered — Rank Holder Mode
+  </div>
+  <h1 class="text-4xl sm:text-5xl font-bold mb-4 leading-tight">
+    Ace Your B.Tech Exams<br/><span class="grad">Like a Rank Holder</span>
+  </h1>
+  <p class="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">Generate university-grade answers with ASCII diagrams, keyword highlighting, and predicted questions — tailored for JC Bose UST YMCA Faridabad.</p>
+  <div class="flex flex-wrap justify-center gap-3">
+    <span class="chip active text-xs">📐 ASCII Diagrams</span>
+    <span class="chip text-xs">🔑 Keyword Highlighting</span>
+    <span class="chip text-xs">📋 Answer Booklet Format</span>
+    <span class="chip text-xs">🎯 Predicted Questions</span>
+    <span class="chip text-xs">📄 PDF Export</span>
+    <span class="chip text-xs">📷 OCR Support</span>
+  </div>
+</section>
+
+<!-- MAIN CONTENT -->
+<main class="px-4 sm:px-6 pb-16 max-w-7xl mx-auto">
+  <div class="two-col flex gap-5" style="align-items:flex-start;">
+
+    <!-- LEFT PANEL -->
+    <div class="left-panel card p-5 flex-shrink-0" style="width:380px;">
+      
+      <!-- Subject chips -->
+      <div class="mb-5">
+        <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3 block">Subject</label>
+        <div class="flex flex-wrap gap-2" id="subject-chips">
+          <button class="chip active" data-sub="EVS">🌿 EVS</button>
+          <button class="chip" data-sub="Mathematics">📐 Maths</button>
+          <button class="chip" data-sub="Physics">⚛️ Physics</button>
+          <button class="chip" data-sub="Chemistry">🧪 Chemistry</button>
+          <button class="chip" data-sub="Technical">💻 Technical</button>
+        </div>
+      </div>
+
+      <!-- Student Details -->
+      <div class="mb-5">
+        <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3 block">Student Details</label>
+        <div class="space-y-3">
+          <input id="stu-name" type="text" placeholder="Full Name" class="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none transition-colors"/>
+          <input id="stu-roll" type="text" placeholder="Roll Number" class="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none transition-colors"/>
+          <input id="stu-exam" type="text" placeholder="Exam Name (e.g. End Semester May 2025)" class="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none transition-colors"/>
+        </div>
+      </div>
+
+      <!-- Question Input -->
+      <div class="mb-4">
+        <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3 block">Question</label>
+        <textarea id="question-input" rows="5" placeholder="Paste your question here, or upload an image/PDF below..." class="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none transition-colors resize-none"></textarea>
+      </div>
+
+      <!-- File Upload -->
+      <div class="mb-4">
+        <label class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2 block">Upload Question Paper</label>
+        <label id="drop-label" class="drop-zone block p-5 text-center cursor-pointer">
+          <input type="file" id="file-input" accept="image/*,.pdf"/>
+          <div id="drop-content">
+            <div class="text-3xl mb-2">📁</div>
+            <p class="text-sm text-gray-400">Drag & drop or <span class="text-blue-400">click to upload</span></p>
+            <p class="text-xs text-gray-600 mt-1">PNG, JPG, PDF supported</p>
+          </div>
+          <div id="file-name" class="text-xs text-blue-400 hidden"></div>
+        </label>
+        <!-- OCR Progress -->
+        <div id="ocr-progress-wrap" class="hidden mt-3">
+          <div class="flex justify-between text-xs text-gray-500 mb-1">
+            <span id="ocr-status">Extracting text...</span>
+            <span id="ocr-pct">0%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="ocr-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- Model info -->
+      <div class="text-xs text-gray-600 mb-4 flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+        Free AI models · automatic fallback
+      </div>
+
+      <!-- Generate Button -->
+      <button id="gen-btn" class="btn-gen w-full py-3 text-sm font-semibold">
+        ✨ Generate Answer
+      </button>
+
+      <!-- Generation Progress -->
+      <div id="gen-progress-wrap" class="hidden mt-3">
+        <div class="flex justify-between text-xs text-gray-500 mb-1">
+          <span id="gen-status">Generating answer...</span>
+          <span>⏳</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill animate-pulse" style="width:100%"></div></div>
+      </div>
+
+    </div>
+    <!-- END LEFT PANEL -->
+
+    <!-- RIGHT PANEL -->
+    <div class="flex-1 min-w-0">
+      
+      <!-- Empty State -->
+      <div id="empty-state" class="card p-12 text-center">
+        <div class="empty-icon">📝</div>
+        <h3 class="text-lg font-semibold mb-2">Answer Booklet Preview</h3>
+        <p class="text-gray-500 text-sm max-w-xs mx-auto">Enter your question and click Generate to see a full university-style answer booklet</p>
+      </div>
+
+      <!-- Booklet Preview -->
+      <div id="booklet-container" class="hidden">
+        <!-- Top controls -->
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm text-gray-400 font-medium">Answer Booklet Preview</span>
+          <div class="flex gap-2">
+            <button id="copy-btn" class="flex items-center gap-1.5 text-xs bg-[#161b22] border border-[#30363d] hover:border-blue-500 text-gray-300 px-3 py-1.5 rounded-lg transition-colors">📋 Copy</button>
+            <button id="pdf-btn" class="flex items-center gap-1.5 text-xs grad-bg text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity">📄 PDF</button>
+          </div>
+        </div>
+
+        <!-- Swipe container -->
+        <div class="swipe-container card overflow-hidden" id="swipe-wrap">
+          <div class="booklet-wrap" id="booklet-inner">
+            
+            <!-- PAGE 0: COVER -->
+            <div class="booklet-page active" id="page-0">
+              <div class="page-nav-bar">
+                <span class="font-bold text-sm">JC Bose University of Science & Technology (YMCA)</span>
+                <span class="page-badge">Cover</span>
+              </div>
+              <div class="cover-header text-center">
+                <div class="text-lg font-bold">ANSWER BOOKLET</div>
+                <div class="text-sm opacity-80">University Examination</div>
+              </div>
+              <div class="p-5 ruled" style="background-color:#fff; min-height: 420px;">
+                <div class="grid grid-cols-2 gap-x-6 gap-y-1 mb-6" style="color:#1a1a1a; font-size:13px;">
+                  <div class="cover-field"><span class="font-semibold">Name:</span> <span id="cv-name"></span></div>
+                  <div class="cover-field"><span class="font-semibold">Roll No:</span> <span id="cv-roll"></span></div>
+                  <div class="cover-field col-span-2"><span class="font-semibold">Examination:</span> <span id="cv-exam"></span></div>
+                  <div class="cover-field"><span class="font-semibold">Subject:</span> <span id="cv-subject"></span></div>
+                  <div class="cover-field"><span class="font-semibold">Date:</span> <span id="cv-date"></span></div>
+                </div>
+                <div class="mt-6">
+                  <table class="index-table w-full text-center" style="border-collapse: collapse; font-size:12px;">
+                    <thead><tr style="background:#1a237e; color:#fff;"><th class="px-2 py-1">Q.No</th><th class="px-2 py-1">Marks</th><th class="px-2 py-1">Q.No</th><th class="px-2 py-1">Marks</th></tr></thead>
+                    <tbody id="index-table-body"></tbody>
+                  </table>
+                </div>
+                <div class="mt-6 text-xs text-gray-500 text-center border-t pt-3" style="border-color:#e5e7eb;">Generated by ExamCraft • For Educational Purposes Only</div>
+              </div>
+              <div class="page-footer">
+                <span id="cv-footer-name"></span>
+                <span id="cv-footer-roll"></span>
+              </div>
+            </div>
+
+            <!-- PAGE 1: INTRO + MAIN ANSWER -->
+            <div class="booklet-page" id="page-1">
+              <div class="page-nav-bar">
+                <span class="font-semibold text-sm">Answer Sheet</span>
+                <span class="page-badge">Page 1 of 4</span>
+              </div>
+              <div class="ruled p-0" style="background-color:#fff; min-height:460px; position:relative;">
+                <div class="margin-wrap py-3 pr-4 pl-14">
+                  <div class="margin-line"></div>
+                  <div class="question-box">
+                    <div class="text-xs font-bold text-blue-700 mb-1">QUESTION</div>
+                    <div id="pg1-question" class="text-sm font-medium"></div>
+                  </div>
+                  <div class="section-head">
+                    <div class="section-dot"></div>
+                    <span style="color:#1a237e; font-size:14px;">INTRODUCTION</span>
+                  </div>
+                  <div id="pg1-intro" class="text-sm leading-7" style="color:#1a1a1a;"></div>
+                  <div class="section-head mt-3">
+                    <div class="section-dot"></div>
+                    <span style="color:#1a237e; font-size:14px;">MAIN ANSWER</span>
+                  </div>
+                  <div id="pg1-main" class="text-sm leading-7" style="color:#1a1a1a;"></div>
+                </div>
+              </div>
+              <div class="page-footer">
+                <span id="pg1-footer-name"></span>
+                <span id="pg1-footer-roll"></span>
+              </div>
+            </div>
+
+            <!-- PAGE 2: KEY POINTS + DIAGRAM + CONCLUSION -->
+            <div class="booklet-page" id="page-2">
+              <div class="page-nav-bar">
+                <span class="font-semibold text-sm">Key Points & Diagram</span>
+                <span class="page-badge">Page 2 of 4</span>
+              </div>
+              <div class="ruled p-0" style="background-color:#fff; min-height:460px;">
+                <div class="margin-wrap py-3 pr-4 pl-14">
+                  <div class="margin-line"></div>
+                  <div class="section-head">
+                    <div class="section-dot"></div>
+                    <span style="color:#1a237e; font-size:14px;">KEY POINTS</span>
+                  </div>
+                  <ol id="pg2-kp" class="text-sm space-y-1.5 leading-6 pl-4" style="color:#1a1a1a; list-style:decimal;"></ol>
+                  <div class="section-head mt-3">
+                    <div class="section-dot"></div>
+                    <span style="color:#1a237e; font-size:14px;">DIAGRAM</span>
+                  </div>
+                  <div class="text-xs text-center font-semibold mb-1" id="pg2-diag-title" style="color:#1a237e;"></div>
+                  <div id="pg2-diagram" class="diagram-box"></div>
+                  <div class="section-head mt-3">
+                    <div class="section-dot"></div>
+                    <span style="color:#1a237e; font-size:14px;">CONCLUSION</span>
+                  </div>
+                  <div id="pg2-conclusion" class="text-sm leading-7" style="color:#1a1a1a;"></div>
+                  <div class="final-box mt-3">
+                    <div class="text-xs font-bold mb-1" style="color:#3f51b5;">FINAL ANSWER</div>
+                    <div id="pg2-final" class="text-sm" style="color:#1a1a1a;"></div>
+                  </div>
+                  <div class="rough-box">
+                    <div class="text-xs font-semibold mb-2" style="color:#666;">ROUGH WORK</div>
+                  </div>
+                </div>
+              </div>
+              <div class="page-footer">
+                <span id="pg2-footer-name"></span>
+                <span id="pg2-footer-roll"></span>
+              </div>
+            </div>
+
+            <!-- PAGE 3: HIGH YIELD -->
+            <div class="booklet-page" id="page-3">
+              <div class="page-nav-bar">
+                <span class="font-semibold text-sm">High Yield Predictions</span>
+                <span class="page-badge">Page 3 of 4</span>
+              </div>
+              <div class="hy-header">
+                <div class="font-bold text-base">🎯 HIGH YIELD — Predicted Exam Questions</div>
+                <div class="text-xs opacity-80 mt-0.5">Based on JC Bose UST exam patterns — Study these!</div>
+              </div>
+              <div style="background:#fff; min-height:400px; padding-bottom:12px;">
+                <div class="hy-card" id="hy1">
+                  <div class="text-xs font-bold mb-1" style="color:#b71c1c;">PREDICTED QUESTION 1</div>
+                  <div id="hy-q1" class="text-sm font-semibold mb-2" style="color:#1a1a1a;"></div>
+                  <div class="text-xs font-semibold mb-1" style="color:#666;">FRAMEWORK TO ANSWER:</div>
+                  <div id="hy-fw1" class="text-xs leading-5" style="color:#333;"></div>
+                </div>
+                <div class="hy-card" id="hy2">
+                  <div class="text-xs font-bold mb-1" style="color:#b71c1c;">PREDICTED QUESTION 2</div>
+                  <div id="hy-q2" class="text-sm font-semibold mb-2" style="color:#1a1a1a;"></div>
+                  <div class="text-xs font-semibold mb-1" style="color:#666;">FRAMEWORK TO ANSWER:</div>
+                  <div id="hy-fw2" class="text-xs leading-5" style="color:#333;"></div>
+                </div>
+                <div class="hy-card" id="hy3">
+                  <div class="text-xs font-bold mb-1" style="color:#b71c1c;">PREDICTED QUESTION 3</div>
+                  <div id="hy-q3" class="text-sm font-semibold mb-2" style="color:#1a1a1a;"></div>
+                  <div class="text-xs font-semibold mb-1" style="color:#666;">FRAMEWORK TO ANSWER:</div>
+                  <div id="hy-fw3" class="text-xs leading-5" style="color:#333;"></div>
+                </div>
+              </div>
+              <div class="page-footer">
+                <span id="pg3-footer-name"></span>
+                <span id="pg3-footer-roll"></span>
+              </div>
+            </div>
+
+          </div><!-- booklet-wrap -->
+        </div><!-- swipe-container -->
+
+        <!-- Page navigation -->
+        <div class="flex items-center justify-between mt-4">
+          <button id="prev-page" class="text-xs bg-[#161b22] border border-[#30363d] hover:border-blue-500 text-gray-400 px-4 py-1.5 rounded-lg transition-colors">← Prev</button>
+          <div class="flex gap-2 items-center" id="dot-wrap">
+            <div class="dot-indicator active" data-pg="0"></div>
+            <div class="dot-indicator" data-pg="1"></div>
+            <div class="dot-indicator" data-pg="2"></div>
+            <div class="dot-indicator" data-pg="3"></div>
+          </div>
+          <button id="next-page" class="text-xs bg-[#161b22] border border-[#30363d] hover:border-blue-500 text-gray-400 px-4 py-1.5 rounded-lg transition-colors">Next →</button>
+        </div>
+      </div><!-- booklet-container -->
+    </div>
+    <!-- END RIGHT PANEL -->
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="border-t border-[#30363d] bg-[#161b22] px-6 py-12">
+  <div class="max-w-6xl mx-auto">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
+      <!-- Brand -->
+      <div>
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-7 h-7 grad-bg rounded-lg flex items-center justify-center text-white font-bold text-xs">EC</div>
+          <span class="font-bold grad">ExamCraft</span>
+        </div>
+        <p class="text-xs text-gray-500 mb-4">AI-powered exam answer generation for B.Tech students at JC Bose UST YMCA Faridabad.</p>
+        <div class="flex gap-3">
+          <a href="https://github.com/index-oss/ExamCraft" target="_blank" class="text-gray-500 hover:text-white text-sm transition-colors">GitHub</a>
+          <a href="https://instagram.com/offsec.mohit" target="_blank" class="text-gray-500 hover:text-white text-sm transition-colors">Instagram</a>
+          <a href="mailto:infosec.mohitsharma@gmail.com" class="text-gray-500 hover:text-white text-sm transition-colors">Email</a>
+        </div>
+      </div>
+      <!-- Platform -->
+      <div>
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Platform</div>
+        <div class="space-y-2 text-sm text-gray-500">
+          <div><a href="#" class="hover:text-white transition-colors">About ExamCraft</a></div>
+          <div><a href="#" class="hover:text-white transition-colors">Features</a></div>
+          <div><a href="https://github.com/index-oss/ExamCraft" target="_blank" class="hover:text-white transition-colors">GitHub Repository ↗</a></div>
+          <div><a href="https://docs.github.com/en/rest/models" target="_blank" class="hover:text-white transition-colors">API Docs ↗</a></div>
+        </div>
+      </div>
+      <!-- Contact -->
+      <div>
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Contact</div>
+        <div class="space-y-2 text-sm text-gray-500">
+          <div>✉️ infosec.mohitsharma@gmail.com</div>
+          <div>🐙 github.com/index-oss</div>
+          <div>📸 @offsec.mohit</div>
+          <div>🏫 JC Bose UST YMCA Faridabad</div>
+        </div>
+      </div>
+    </div>
+    <div class="border-t border-[#30363d] pt-6 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600">
+      <span>© 2025 ExamCraft. For educational purposes only.</span>
+      <span class="mt-2 sm:mt-0">Built with ❤️ by <a href="https://github.com/index-oss" class="text-blue-500 hover:text-blue-400">index-oss</a></span>
+    </div>
+  </div>
+</footer>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+// The AI key lives on the server (api/generate.js, set as Vercel env vars). Never put keys in this file.
+const API_ENDPOINT = "/api/generate";
+const FP_KEY = "qsrBGTTwLvNRisTeXYow";
+const FP_REGION = "ap";
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let currentSubject = "EVS";
+let currentPage = 0;
+let generatedData = null;
+let touchStartX = 0;
+let touchStartY = 0;
+
+// ─── FINGERPRINT ─────────────────────────────────────────────────────────────
+async function initFingerprint() {
+  try {
+    const fp = await import(`https://fpjscdn.net/v3/${FP_KEY}/iife.min.js`).catch(() => null);
+    if (fp) {
+      const result = await FingerprintJS.load({ region: FP_REGION }).then(a => a.get());
+      document.getElementById('fp-id').textContent = `ID: ${result.visitorId.slice(0,8)}…`;
+    }
+  } catch(e) { /* silent */ }
+}
+// Use script tag approach for Fingerprint
+(function() {
+  const s = document.createElement('script');
+  s.src = `https://fpjscdn.net/v3/${FP_KEY}/iife.min.js`;
+  s.onload = async () => {
+    try {
+      const fp = await FingerprintJS.load({ region: FP_REGION });
+      const r = await fp.get();
+      document.getElementById('fp-id').textContent = `ID: ${r.visitorId.slice(0,8)}…`;
+    } catch(e) {}
+  };
+  document.head.appendChild(s);
+})();
+
+// ─── SUBJECT CHIPS ────────────────────────────────────────────────────────────
+document.getElementById('subject-chips').addEventListener('click', e => {
+  const chip = e.target.closest('[data-sub]');
+  if (!chip) return;
+  currentSubject = chip.dataset.sub;
+  document.querySelectorAll('[data-sub]').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+});
+
+// ─── FILE UPLOAD ──────────────────────────────────────────────────────────────
+const dropLabel = document.getElementById('drop-label');
+const fileInput = document.getElementById('file-input');
+const dropContent = document.getElementById('drop-content');
+const fileName = document.getElementById('file-name');
+
+['dragenter','dragover'].forEach(ev => {
+  dropLabel.addEventListener(ev, e => { e.preventDefault(); dropLabel.classList.add('dragover'); });
+});
+['dragleave','drop'].forEach(ev => {
+  dropLabel.addEventListener(ev, e => { e.preventDefault(); dropLabel.classList.remove('dragover'); });
+});
+dropLabel.addEventListener('drop', e => { handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+
+async function handleFile(file) {
+  if (!file) return;
+  const name = file.name;
+  dropContent.classList.add('hidden');
+  fileName.textContent = `📎 ${name}`;
+  fileName.classList.remove('hidden');
+
+  const ocrWrap = document.getElementById('ocr-progress-wrap');
+  const ocrBar = document.getElementById('ocr-bar');
+  const ocrStatus = document.getElementById('ocr-status');
+  const ocrPct = document.getElementById('ocr-pct');
+  ocrWrap.classList.remove('hidden');
+
+  try {
+    let text = '';
+    if (file.type === 'application/pdf') {
+      ocrStatus.textContent = 'Reading PDF…';
+      ocrBar.style.width = '20%'; ocrPct.textContent = '20%';
+      text = await extractPDFText(file);
+      if (!text.trim()) {
+        ocrStatus.textContent = 'OCR scanning PDF…';
+        text = await ocrPDF(file, (p) => { ocrBar.style.width=p+'%'; ocrPct.textContent=p+'%'; });
+      }
+    } else {
+      ocrStatus.textContent = 'Running OCR…';
+      text = await ocrImage(file, (p) => { ocrBar.style.width=p+'%'; ocrPct.textContent=p+'%'; });
+    }
+    ocrBar.style.width = '100%'; ocrPct.textContent = '100%';
+    ocrStatus.textContent = 'Done! ✓';
+    if (text.trim()) {
+      const q = document.getElementById('question-input');
+      q.value = (q.value ? q.value + '\n\n' : '') + text.trim();
+      showToast('Text extracted successfully!', 'success');
+    }
+    setTimeout(() => ocrWrap.classList.add('hidden'), 2000);
+  } catch(e) {
+    ocrStatus.textContent = 'Failed: ' + e.message;
+    showToast('OCR failed: ' + e.message, 'error');
+  }
+}
+
+async function extractPDFText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const pdf = await pdfjsLib.getDocument({ data: e.target.result }).promise;
+        let text = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const tc = await page.getTextContent();
+          text += tc.items.map(it => it.str).join(' ') + '\n';
+        }
+        resolve(text);
+      } catch(err) { reject(err); }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function ocrImage(file, onProgress) {
+  const worker = await Tesseract.createWorker('eng', 1, {
+    logger: m => { if(m.status==='recognizing text') onProgress(Math.round(m.progress*100)); }
+  });
+  const { data: { text } } = await worker.recognize(file);
+  await worker.terminate();
+  return text;
+}
+
+async function ocrPDF(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const pdf = await pdfjsLib.getDocument({ data: e.target.result }).promise;
+        let allText = '';
+        for (let pg = 1; pg <= pdf.numPages; pg++) {
+          const page = await pdf.getPage(pg);
+          const vp = page.getViewport({ scale: 2 });
+          const canvas = document.createElement('canvas');
+          canvas.width = vp.width; canvas.height = vp.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+          const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+          const worker = await Tesseract.createWorker('eng', 1, {
+            logger: m => { if(m.status==='recognizing text') onProgress(Math.round(((pg-1)/pdf.numPages + m.progress/pdf.numPages)*100)); }
+          });
+          const { data: { text } } = await worker.recognize(blob);
+          await worker.terminate();
+          allText += text + '\n';
+        }
+        resolve(allText);
+      } catch(err) { reject(err); }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ─── AI GENERATION ────────────────────────────────────────────────────────────
+document.getElementById('gen-btn').addEventListener('click', generate);
+
+async function generate() {
+  const q = document.getElementById('question-input').value.trim();
+  if (!q) { showToast('Please enter a question first', 'error'); return; }
+
+  const name = document.getElementById('stu-name').value || 'Student';
+  const roll = document.getElementById('stu-roll').value || 'XXXXXX';
+  const exam = document.getElementById('stu-exam').value || 'End Semester Examination';
+
+  const btn = document.getElementById('gen-btn');
+  const prog = document.getElementById('gen-progress-wrap');
+  const genStatus = document.getElementById('gen-status');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating…';
+  prog.classList.remove('hidden');
+  genStatus.textContent = 'Generating answer…';
+
+  let out;
+  try {
+    out = await callAPI(currentSubject, q);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '✨ Generate Answer';
+    prog.classList.add('hidden');
+    showToast('API Error: ' + e.message, 'error');
+    return;
+  }
+
+  genStatus.textContent = 'Rendering booklet…';
+  generatedData = out.data;
+  renderBooklet(out.data, { name, roll, exam, subject: currentSubject });
+
+  btn.disabled = false; btn.textContent = '✨ Generate Answer';
+  prog.classList.add('hidden');
+  showToast(`Done! Used ${out.model}`, 'success');
+}
+
+async function callAPI(subject, question) {
+  const res = await fetch(API_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subject, question })
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+  let clean = (body.content || '').replace(/```json|```/g, '').trim();
+  const start = clean.indexOf('{'), end = clean.lastIndexOf('}');
+  if (start !== -1 && end !== -1) clean = clean.slice(start, end + 1);
+  try { return { data: JSON.parse(clean), model: body.model || 'AI' }; }
+  catch { throw new Error('The model returned an invalid answer, please try again'); }
+}
+
+// ─── RENDER BOOKLET ───────────────────────────────────────────────────────────
+function renderKeywords(text) {
+  if (!text) return '';
+  const safe = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return safe.replace(/&lt;&lt;(.+?)&gt;&gt;/g, '<span class="kw">$1</span>');
+}
+
+function renderBooklet(d, meta) {
+  const now = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+
+  // Cover
+  document.getElementById('cv-name').textContent = meta.name;
+  document.getElementById('cv-roll').textContent = meta.roll;
+  document.getElementById('cv-exam').textContent = meta.exam;
+  document.getElementById('cv-subject').textContent = meta.subject;
+  document.getElementById('cv-date').textContent = now;
+  document.getElementById('cv-footer-name').textContent = meta.name;
+  document.getElementById('cv-footer-roll').textContent = `Roll: ${meta.roll}`;
+
+  // Index table
+  const tbody = document.getElementById('index-table-body');
+  tbody.innerHTML = '';
+  const rows = [['Q.1','','Q.6',''],['Q.2','','Q.7',''],['Q.3','','Q.8',''],['Q.4','','Q.9',''],['Q.5','','Q.10','']];
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    r.forEach(c => { const td = document.createElement('td'); td.textContent = c; td.className = 'px-2 py-1'; tr.appendChild(td); });
+    tbody.appendChild(tr);
+  });
+
+  // Page 1
+  document.getElementById('pg1-question').textContent = d.question || document.getElementById('question-input').value.trim();
+  document.getElementById('pg1-intro').innerHTML = renderKeywords(d.introduction);
+  document.getElementById('pg1-main').innerHTML = renderKeywords(d.mainAnswer);
+  document.getElementById('pg1-footer-name').textContent = meta.name;
+  document.getElementById('pg1-footer-roll').textContent = `Roll: ${meta.roll}`;
+
+  // Page 2
+  const kpList = document.getElementById('pg2-kp');
+  kpList.innerHTML = '';
+  (d.keyPoints || []).forEach(pt => {
+    const li = document.createElement('li');
+    li.innerHTML = renderKeywords(pt);
+    kpList.appendChild(li);
+  });
+  document.getElementById('pg2-diagram').textContent = d.diagram || '';
+  document.getElementById('pg2-diag-title').textContent = d.diagramTitle || '';
+  document.getElementById('pg2-conclusion').innerHTML = renderKeywords(d.conclusion);
+  document.getElementById('pg2-final').innerHTML = renderKeywords(d.finalAnswer);
+  document.getElementById('pg2-footer-name').textContent = meta.name;
+  document.getElementById('pg2-footer-roll').textContent = `Roll: ${meta.roll}`;
+
+  // Page 3
+  document.getElementById('hy-q1').textContent = d.predictedQ1 || '';
+  document.getElementById('hy-fw1').textContent = d.pq1fw || '';
+  document.getElementById('hy-q2').textContent = d.predictedQ2 || '';
+  document.getElementById('hy-fw2').textContent = d.pq2fw || '';
+  document.getElementById('hy-q3').textContent = d.predictedQ3 || '';
+  document.getElementById('hy-fw3').textContent = d.pq3fw || '';
+  document.getElementById('pg3-footer-name').textContent = meta.name;
+  document.getElementById('pg3-footer-roll').textContent = `Roll: ${meta.roll}`;
+
+  // Show booklet
+  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('booklet-container').classList.remove('hidden');
+  goToPage(0);
+}
+
+// ─── PAGE NAVIGATION ──────────────────────────────────────────────────────────
+function goToPage(n) {
+  document.querySelectorAll('.booklet-page').forEach((p, i) => {
+    p.classList.toggle('active', i === n);
+  });
+  document.querySelectorAll('.dot-indicator').forEach((d, i) => {
+    d.classList.toggle('active', i === n);
+  });
+  currentPage = n;
+  document.getElementById('prev-page').disabled = n === 0;
+  document.getElementById('next-page').disabled = n === 3;
+}
+
+document.getElementById('prev-page').addEventListener('click', () => { if(currentPage > 0) goToPage(currentPage - 1); });
+document.getElementById('next-page').addEventListener('click', () => { if(currentPage < 3) goToPage(currentPage + 1); });
+document.querySelectorAll('.dot-indicator').forEach(d => {
+  d.addEventListener('click', () => goToPage(+d.dataset.pg));
+});
+
+// Touch swipe
+const swipeWrap = document.getElementById('swipe-wrap');
+swipeWrap.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, { passive: true });
+swipeWrap.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+  if (Math.abs(dx) > 50 && dy < 80) {
+    if (dx < 0 && currentPage < 3) goToPage(currentPage + 1);
+    if (dx > 0 && currentPage > 0) goToPage(currentPage - 1);
+  }
+}, { passive: true });
+
+// ─── COPY ─────────────────────────────────────────────────────────────────────
+document.getElementById('copy-btn').addEventListener('click', () => {
+  if (!generatedData) return;
+  const d = generatedData;
+  const txt = `QUESTION: ${d.question}\n\nINTRODUCTION:\n${(d.introduction||'').replace(/<<([^>]+)>>/g,'$1')}\n\nMAIN ANSWER:\n${(d.mainAnswer||'').replace(/<<([^>]+)>>/g,'$1')}\n\nKEY POINTS:\n${(d.keyPoints||[]).map((p,i)=>`${i+1}. ${p.replace(/<<([^>]+)>>/g,'$1')}`).join('\n')}\n\nDIAGRAM — ${d.diagramTitle}:\n${d.diagram}\n\nCONCLUSION:\n${(d.conclusion||'').replace(/<<([^>]+)>>/g,'$1')}\n\nFINAL ANSWER:\n${(d.finalAnswer||'').replace(/<<([^>]+)>>/g,'$1')}\n\n──── HIGH YIELD PREDICTIONS ────\nQ1: ${d.predictedQ1}\n${d.pq1fw}\nQ2: ${d.predictedQ2}\n${d.pq2fw}\nQ3: ${d.predictedQ3}\n${d.pq3fw}`;
+  navigator.clipboard.writeText(txt).then(() => showToast('Copied to clipboard!', 'success')).catch(() => showToast('Copy failed', 'error'));
+});
+
+// ─── PDF DOWNLOAD ─────────────────────────────────────────────────────────────
+document.getElementById('pdf-btn').addEventListener('click', () => {
+  if (!generatedData) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const d = generatedData;
+  const W = 210, M = 20, CW = W - M*2;
+  let y = 20;
+
+  const stripKw = t => (t||'').replace(/<<([^>]+)>>/g,'$1');
+  const splitLines = (text, maxW, size) => {
+    doc.setFontSize(size);
+    return doc.splitTextToSize(stripKw(text), maxW);
+  };
+  const addLines = (startY) => {
+    doc.setDrawColor(210,210,220);
+    doc.setLineWidth(0.1);
+    for (let ly = startY; ly < 285; ly += 7) doc.line(M, ly, W-M, ly);
+    // Red margin
+    doc.setDrawColor(232,160,160);
+    doc.setLineWidth(0.4);
+    doc.line(M+10, startY, M+10, 285);
+  };
+
+  const name = document.getElementById('stu-name').value||'Student';
+  const roll = document.getElementById('stu-roll').value||'XXXXXX';
+  const exam = document.getElementById('stu-exam').value||'End Semester Examination';
+
+  function newPage() {
+    addLines(15);
+    // Header
+    doc.setFillColor(26,35,126); doc.rect(0,0,W,14,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont('helvetica','bold');
+    doc.text('JC Bose University of Science & Technology (YMCA), Faridabad', M, 9);
+    doc.text(`${name} | Roll: ${roll}`, W-M, 9, { align:'right' });
+    // Footer
+    doc.setFillColor(26,35,126); doc.rect(0,287,W,10,'F');
+    doc.setFontSize(8); doc.setTextColor(255,255,255);
+    doc.text(name, M, 293); doc.text(`Roll: ${roll}`, W-M, 293, { align:'right' });
+    doc.setTextColor(0,0,0);
+    y = 22;
+  }
+
+  const checkY = (needed) => { if(y + needed > 280) { doc.addPage(); newPage(); } };
+
+  // PAGE 1 — Cover
+  doc.setFillColor(26,35,126); doc.rect(0,0,W,18,'F');
+  doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('ANSWER BOOKLET', W/2, 9, { align:'center' });
+  doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('JC Bose University of Science & Technology (YMCA), Faridabad', W/2, 15, { align:'center' });
+  doc.setTextColor(0,0,0);
+  y = 25;
+  doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text('Name: ', M, y); doc.setFont('helvetica','normal'); doc.text(name, M+18, y); y+=8;
+  doc.setFont('helvetica','bold'); doc.text('Roll No: ', M, y); doc.setFont('helvetica','normal'); doc.text(roll, M+22, y); y+=8;
+  doc.setFont('helvetica','bold'); doc.text('Exam: ', M, y); doc.setFont('helvetica','normal'); doc.text(exam, M+18, y); y+=8;
+  doc.setFont('helvetica','bold'); doc.text('Subject: ', M, y); doc.setFont('helvetica','normal'); doc.text(currentSubject, M+22, y); y+=8;
+  doc.setFont('helvetica','bold'); doc.text('Date: ', M, y); doc.setFont('helvetica','normal'); doc.text(new Date().toLocaleDateString('en-IN'), M+18, y); y+=12;
+
+  // PAGE 2 — Answer
+  doc.addPage(); newPage();
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(26,35,126);
+  doc.text('QUESTION', M+12, y); y+=5;
+  doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(10);
+  const qLines = splitLines(d.question, CW-12, 10);
+  qLines.forEach(l => { checkY(6); doc.text(l, M+12, y); y+=6; }); y+=3;
+
+  doc.setFont('helvetica','bold'); doc.setTextColor(26,35,126); doc.setFontSize(11);
+  doc.text('INTRODUCTION', M+12, y); y+=5;
+  doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(10);
+  splitLines(d.introduction, CW-12, 10).forEach(l => { checkY(6); doc.text(l, M+12, y); y+=6; }); y+=3;
+
+  doc.setFont('helvetica','bold'); doc.setTextColor(26,35,126); doc.setFontSize(11);
+  doc.text('MAIN ANSWER', M+12, y); y+=5;
+  doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(10);
+  splitLines(d.mainAnswer, CW-12, 10).forEach(l => { checkY(6); doc.text(l, M+12, y); y+=6; }); y+=3;
+
+  // PAGE 3 — Key Points + Diagram
+  doc.addPage(); newPage();
+  doc.setFont('helvetica','bold'); doc.setTextColor(26,35,126); doc.setFontSize(11);
+  doc.text('KEY POINTS', M+12, y); y+=5;
+  doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(10);
+  (d.keyPoints||[]).forEach((pt,i) => {
+    const kpLines = splitLines(`${i+1}. ${pt}`, CW-14, 10);
+    kpLines.forEach(l => { checkY(6); doc.text(l, M+12, y); y+=6; });
+  }); y+=3;
+
+  doc.setFont('helvetica','bold'); doc.setTextColor(26,35,126); doc.setFontSize(11);
+  doc.text('DIAGRAM — ' + (d.diagramTitle||''), M+12, y); y+=5;
+  doc.setFont('courier','normal'); doc.setFontSize(7.5); doc.setTextColor(30,30,30);
+  const diagLines = (d.diagram||'').split('\n');
+  doc.setFillColor(248,248,248); doc.rect(M+10, y-3, CW-10, Math.min(diagLines.length*5+6, 70), 'F');
+  diagLines.forEach(l => { checkY(5); doc.text(l, M+12, y); y+=5; }); y+=3;
+
+  doc.setFont('helvetica','bold'); doc.setTextColor(26,35,126); doc.setFontSize(11);
+  doc.text('CONCLUSION', M+12, y); y+=5;
+  doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(10);
+  splitLines(d.conclusion, CW-12, 10).forEach(l => { checkY(6); doc.text(l, M+12, y); y+=6; }); y+=4;
+
+  // Boxed final answer
+  const faLines = splitLines(d.finalAnswer, CW-16, 10);
+  const faH = faLines.length*6 + 10;
+  checkY(faH+4);
+  doc.setFillColor(240,242,255); doc.setDrawColor(63,81,181); doc.setLineWidth(0.5);
+  doc.rect(M+10, y-4, CW-10, faH, 'FD');
+  doc.setFont('helvetica','bold'); doc.setTextColor(63,81,181); doc.setFontSize(9);
+  doc.text('FINAL ANSWER', M+14, y+2); y+=7;
+  doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(10);
+  faLines.forEach(l => { doc.text(l, M+14, y); y+=6; }); y+=4;
+
+  // PAGE 4 — High Yield
+  doc.addPage();
+  doc.setFillColor(183,28,28); doc.rect(0,0,W,16,'F');
+  doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('🎯 HIGH YIELD — Predicted Exam Questions', W/2, 10, { align:'center' });
+  doc.setTextColor(0,0,0); y = 22;
+
+  [[d.predictedQ1,d.pq1fw],[d.predictedQ2,d.pq2fw],[d.predictedQ3,d.pq3fw]].forEach(([q,fw],i) => {
+    checkY(30);
+    doc.setFillColor(255,249,249); doc.setDrawColor(239,154,154); doc.setLineWidth(0.4);
+    const bStart = y - 4;
+    doc.setFont('helvetica','bold'); doc.setTextColor(183,28,28); doc.setFontSize(9);
+    doc.text(`PREDICTED QUESTION ${i+1}`, M, y); y+=5;
+    doc.setFont('helvetica','bold'); doc.setTextColor(0,0,0); doc.setFontSize(10);
+    const qls = splitLines(q, CW, 10);
+    qls.forEach(l => { doc.text(l, M, y); y+=6; }); y+=1;
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(80,80,80);
+    doc.text('FRAMEWORK:', M, y); y+=5;
+    doc.setFont('helvetica','normal'); doc.setTextColor(50,50,50); doc.setFontSize(9);
+    splitLines(fw, CW, 9).forEach(l => { checkY(5); doc.text(l, M, y); y+=5; });
+    doc.setFillColor(255,249,249); doc.setDrawColor(239,154,154);
+    doc.rect(M-2, bStart, CW+4, y-bStart+2, 'D');
+    y+=6;
+  });
+
+  // Footer
+  doc.setFillColor(26,35,126); doc.rect(0,287,W,10,'F');
+  doc.setFontSize(8); doc.setTextColor(255,255,255);
+  doc.text(name, M, 293); doc.text(`Roll: ${roll}`, W-M, 293, { align:'right' });
+
+  doc.save(`ExamCraft_${currentSubject}_${roll}.pdf`);
+  showToast('PDF downloaded!', 'success');
+});
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+</script>
+</body>
+</html>
